@@ -5,12 +5,13 @@ namespace URLShortener.Data;
 
 public class AppDbContext : DbContext
 {
-    DbSet<Urls> Urls { get; set; }
-    DbSet<Clicks> Clicks { get; set; }
+    public DbSet<Urls> Urls { get; set; }
+    public DbSet<Clicks> Clicks { get; set; }
 
     // The constructor accepts options from Program.cs
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
     {
+
     }
 }
 
