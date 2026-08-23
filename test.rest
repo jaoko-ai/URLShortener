@@ -1,0 +1,7 @@
+###
+POST http://localhost:5062/shorten HTTP/1.1
+Content-Type: application/json
+
+{
+    "LongUrl": "name"
+}
