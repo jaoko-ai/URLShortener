@@ -1,6 +1,5 @@
 using URLShortener.Data;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authentication;
 
 namespace URLShortener;
 
@@ -58,6 +57,12 @@ class Program
                return Results.BadRequest("URL cannot be empty.");
            }
 
+           if (!Uri.TryCreate(request.LongUrl, UriKind.Absolute, out var uri) ||
+           (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+           {
+               return Results.BadRequest("URL must be a valid absolute http(s) URL.");
+           }
+
            var newUrl = new Urls
            {
                OriginalUrl = request.LongUrl,
@@ -74,7 +79,7 @@ class Program
 
            return Results.Ok(new { ShortUrl = $"http://localhost:5062/{newUrl.ShortCode}" });
        });
-        app.MapGet("/:{shortCode}", async (AppDbContext db, string shortCode, HttpContext context) =>
+        app.MapGet("/{shortCode}", async (AppDbContext db, string shortCode, HttpContext context) =>
         {
             Console.WriteLine($"Parameter reached: {shortCode}");
             // Validate
@@ -98,85 +103,48 @@ class Program
             }
             record.ClickCount++;
 
+
+            // Get click analytics
             string clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
             string userAgent = context.Request.Headers.UserAgent.ToString();
             string referrer = context.Request.Headers.Referer.ToString();
             string language = context.Request.Headers.AcceptLanguage.ToString();
-            try
+            Clicks analytics = new Clicks
             {
-
-                var input = await db.Clicks.Where(u => u.Id == record.Id).SingleAsync();
-                Clicks analytics;
-                if (input == null)
-                {
-                    analytics = new Clicks
-                    {
-                        UrlId = record.Id,
-                        referrer = referrer,
-                        UserAgent = userAgent,
-                        IpAddress = clientIp,
-                        Urls = record
-                    };
-                    await db.Clicks.AddAsync(analytics);
-                }
-            }
-            catch
-            {
-                var analytics = new Clicks
-                {
-                    UrlId = record.Id,
-                    referrer = referrer,
-                    UserAgent = userAgent,
-                    IpAddress = clientIp,
-                    Urls = record
-                };
-                await db.Clicks.AddAsync(analytics);
-            }
+                UrlId = record.Id,
+                referrer = referrer,
+                UserAgent = userAgent,
+                IpAddress = clientIp,
+                Urls = record
+            };
+            await db.Clicks.AddAsync(analytics);
             await db.SaveChangesAsync();
             return Results.Redirect(record.OriginalUrl);
         });
 
-        app.MapGet("/stats/:{shortCode}", async (AppDbContext db, string shortCode) =>
+        app.MapGet("/stats/{shortCode}", async (AppDbContext db, string shortCode) =>
         {
             var input = Decode(shortCode);
-            Clicks? stats = null;
+            Clicks stats = null!;
             try
             {
                 stats = await db.Clicks.Where(u => u.UrlId == input).SingleAsync();
             }
             catch
             {
-                return Results.Ok("No stats yet fot this route");
+                return Results.Ok("No stats yet for this route");
             }
 
             return Results.Ok(stats);
         });
         app.MapPost("/custom", async (AppDbContext db, UrlRequest request) =>
         {
-            if (string.IsNullOrEmpty(request.LongUrl))
-            {
-                return Results.BadRequest("URL cannot be empty.");
-            }
+            return Results.Ok("Service under fix ");
 
-            var newUrl = new Urls
-            {
-                OriginalUrl = request.LongUrl,
-
-                ShortCode = "temp" // Placeholder
-            };
-
-            db.Urls.Add(newUrl);
-            await db.SaveChangesAsync();
-
-            newUrl.ShortCode = Encode(newUrl.Id);
-
-            await db.SaveChangesAsync();
-
-            return Results.Ok(new { ShortUrl = $"https://localhost:5062{newUrl.ShortCode}" });
         });
-        app.MapDelete("/:{shortCode}", async (AppDbContext db, string shortCode) =>
+        app.MapDelete("/{shortCode}", async (AppDbContext db, string shortCode) =>
         {
-            var input = await db.Urls.Where(c => c.ShortCode == shortCode).SingleAsync();
+            var input = await db.Urls.Where(c => c.ShortCode == shortCode).SingleOrDefaultAsync();
             if (input == null)
             {
                 return Results.NotFound();
