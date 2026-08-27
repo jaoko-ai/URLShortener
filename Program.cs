@@ -1,5 +1,6 @@
 using URLShortener.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication;
 
 namespace URLShortener;
 
@@ -74,14 +75,42 @@ class Program
 
            return Results.Ok(new { ShortUrl = $"http://localhost:5062/{newUrl.ShortCode}" });
        });
-        app.MapGet("/:shorten", () =>
+        app.MapGet("/:{shortCode}", async (AppDbContext db, string shortCode) =>
+        {
+            Console.WriteLine($"Parameter reached: {shortCode}");
+            // Validate
+
+            if (string.IsNullOrWhiteSpace(shortCode))
+            {
+                return Results.BadRequest("bad Request.");
+            }
+
+            Urls record;
+            try
+            {
+
+                record = await db.Urls
+                .Where(u => u.ShortCode == shortCode)
+                .SingleAsync();
+            }
+            catch
+            {
+                throw new ArgumentException("shortCode not found in database");
+            }
+            record.ClickCount++;
+            await db.SaveChangesAsync();
+            return Results.Redirect(record.OriginalUrl);
+        });
+
+        app.MapPost("/stats/:{shortCode}", async () =>
         {
 
         });
-
-        app.MapPost("/stats/:shortcode", () => { });
         app.MapPost("/custom", () => { });
-        app.MapDelete("/:shortcode", () => { });
+        app.MapDelete("/:{shortCode}", () =>
+        {
+
+        });
         app.Run();
 
     }
