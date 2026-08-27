@@ -94,7 +94,7 @@ class Program
             }
             catch
             {
-                return Results.NotFound();
+                return Results.Ok(new { ShortCode = "Not found" });
             }
             record.ClickCount++;
 
@@ -139,8 +139,15 @@ class Program
         app.MapGet("/stats/:{shortCode}", async (AppDbContext db, string shortCode) =>
         {
             var input = Decode(shortCode);
-
-            var stats = await db.Clicks.Where(u => u.UrlId == input).SingleAsync();
+            Clicks? stats = null;
+            try
+            {
+                stats = await db.Clicks.Where(u => u.UrlId == input).SingleAsync();
+            }
+            catch
+            {
+                return Results.Ok("No stats yet fot this route");
+            }
 
             return Results.Ok(stats);
         });
@@ -177,7 +184,7 @@ class Program
 
             db.Urls.Remove(input);
             await db.SaveChangesAsync();
-            return Results.Ok("Data was successfully deleted");
+            return Results.Ok(new { Message = "Data was successfully deleted" });
         });
         app.Run();
 
