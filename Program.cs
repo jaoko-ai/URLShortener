@@ -52,27 +52,28 @@ class Program
         }
 
         app.MapPost("/shorten", async (AppDbContext db, UrlRequest request) =>
-{
-    if (string.IsNullOrEmpty(request.LongUrl))
-    {
-        return Results.BadRequest("URL cannot be empty.");
-    }
+       {
+           if (string.IsNullOrEmpty(request.LongUrl))
+           {
+               return Results.BadRequest("URL cannot be empty.");
+           }
 
-    var newUrl = new Urls
-    {
-        OriginalUrl = request.LongUrl,
-        ShortCode = "temp" // Placeholder
-    };
+           var newUrl = new Urls
+           {
+               OriginalUrl = request.LongUrl,
 
-    db.Urls.Add(newUrl);
-    await db.SaveChangesAsync();
+               ShortCode = "temp" // Placeholder
+           };
 
-    newUrl.ShortCode = Encode(newUrl.Id);
+           db.Urls.Add(newUrl);
+           await db.SaveChangesAsync();
 
-    await db.SaveChangesAsync();
+           newUrl.ShortCode = Encode(newUrl.Id);
 
-    return Results.Ok(new { ShortUrl = $"http://localhost:5062/{newUrl.ShortCode}" });
-});
+           await db.SaveChangesAsync();
+
+           return Results.Ok(new { ShortUrl = $"http://localhost:5062/{newUrl.ShortCode}" });
+       });
         app.MapGet("/:shorten", () =>
         {
 
