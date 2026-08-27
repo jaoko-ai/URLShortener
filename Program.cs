@@ -95,16 +95,20 @@ class Program
             }
             catch
             {
-                throw new ArgumentException("shortCode not found in database");
+                return Results.NotFound();
             }
             record.ClickCount++;
             await db.SaveChangesAsync();
             return Results.Redirect(record.OriginalUrl);
         });
 
-        app.MapPost("/stats/:{shortCode}", async () =>
+        app.MapGet("/stats/:{shortCode}", async (AppDbContext db, string shortCode) =>
         {
+            var input = Decode(shortCode);
 
+            var stats = await db.Clicks.Where(u => u.UrlId == input).SingleAsync();
+
+            return Results.Ok(stats);
         });
         app.MapPost("/custom", () => { });
         app.MapDelete("/:{shortCode}", () =>
