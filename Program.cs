@@ -1,7 +1,5 @@
 using URLShortener.Data;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Microsoft.AspNetCore.Http.Extensions;
 
 namespace URLShortener;
 
@@ -46,24 +44,35 @@ class Program
             foreach (char character in str)
             {
                 var value = ALPHABET.IndexOf(character);
+                //TODO: implement better error handling
                 // if (value === -1) throw new Error('Invalid Base62 character: ' + char);
                 result = result * 62 + value;
             }
             return result;
         }
 
+        app.MapPost("/shorten", async (AppDbContext db, UrlRequest request) =>
+{
+    if (string.IsNullOrEmpty(request.LongUrl))
+    {
+        return Results.BadRequest("URL cannot be empty.");
+    }
 
-        app.MapPost("/shorten", (AppDbContext db, UrlRequest request) =>
-        {
-            if (string.IsNullOrEmpty(request.LongUrl))
-            {
-                return Results.BadRequest("URL cannot be empty.");
-            }
+    var newUrl = new Urls
+    {
+        OriginalUrl = request.LongUrl,
+        ShortCode = "temp" // Placeholder
+    };
 
-            string shortCode = Encode(1);
-            return Results.Ok(new { ShortUrl = $"http://localhost:5062/{shortCode}" });
-        });
+    db.Urls.Add(newUrl);
+    await db.SaveChangesAsync();
 
+    newUrl.ShortCode = Encode(newUrl.Id);
+
+    await db.SaveChangesAsync();
+
+    return Results.Ok(new { ShortUrl = $"http://localhost:5062/{newUrl.ShortCode}" });
+});
         app.MapGet("/:shorten", () =>
         {
 
