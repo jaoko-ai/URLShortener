@@ -110,7 +110,29 @@ class Program
 
             return Results.Ok(stats);
         });
-        app.MapPost("/custom", () => { });
+        app.MapPost("/custom", async (AppDbContext db, UrlRequest request) =>
+        {
+            if (string.IsNullOrEmpty(request.LongUrl))
+            {
+                return Results.BadRequest("URL cannot be empty.");
+            }
+
+            var newUrl = new Urls
+            {
+                OriginalUrl = request.LongUrl,
+
+                ShortCode = "temp" // Placeholder
+            };
+
+            db.Urls.Add(newUrl);
+            await db.SaveChangesAsync();
+
+            newUrl.ShortCode = Encode(newUrl.Id);
+
+            await db.SaveChangesAsync();
+
+            return Results.Ok(new { ShortUrl = $"https://localhost:5062{newUrl.ShortCode}" });
+        });
         app.MapDelete("/:{shortCode}", () =>
         {
 
