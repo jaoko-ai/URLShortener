@@ -10,7 +10,6 @@ class Program
     record UrlRequest(string LongUrl);
     public static void Main(string[] args)
     {
-
         var builder = WebApplication.CreateBuilder(args);
         var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
@@ -75,7 +74,7 @@ class Program
 
            return Results.Ok(new { ShortUrl = $"http://localhost:5062/{newUrl.ShortCode}" });
        });
-        app.MapGet("/:{shortCode}", async (AppDbContext db, string shortCode) =>
+        app.MapGet("/:{shortCode}", async (AppDbContext db, string shortCode, HttpContext context) =>
         {
             Console.WriteLine($"Parameter reached: {shortCode}");
             // Validate
@@ -98,6 +97,41 @@ class Program
                 return Results.NotFound();
             }
             record.ClickCount++;
+
+            string clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
+            string userAgent = context.Request.Headers.UserAgent.ToString();
+            string referrer = context.Request.Headers.Referer.ToString();
+            string language = context.Request.Headers.AcceptLanguage.ToString();
+            try
+            {
+
+                var input = await db.Clicks.Where(u => u.Id == record.Id).SingleAsync();
+                Clicks analytics;
+                if (input == null)
+                {
+                    analytics = new Clicks
+                    {
+                        UrlId = record.Id,
+                        referrer = referrer,
+                        UserAgent = userAgent,
+                        IpAddress = clientIp,
+                        Urls = record
+                    };
+                    await db.Clicks.AddAsync(analytics);
+                }
+            }
+            catch
+            {
+                var analytics = new Clicks
+                {
+                    UrlId = record.Id,
+                    referrer = referrer,
+                    UserAgent = userAgent,
+                    IpAddress = clientIp,
+                    Urls = record
+                };
+                await db.Clicks.AddAsync(analytics);
+            }
             await db.SaveChangesAsync();
             return Results.Redirect(record.OriginalUrl);
         });
@@ -133,9 +167,17 @@ class Program
 
             return Results.Ok(new { ShortUrl = $"https://localhost:5062{newUrl.ShortCode}" });
         });
-        app.MapDelete("/:{shortCode}", () =>
+        app.MapDelete("/:{shortCode}", async (AppDbContext db, string shortCode) =>
         {
+            var input = await db.Urls.Where(c => c.ShortCode == shortCode).SingleAsync();
+            if (input == null)
+            {
+                return Results.NotFound();
+            }
 
+            db.Urls.Remove(input);
+            await db.SaveChangesAsync();
+            return Results.Ok("Data was successfully deleted");
         });
         app.Run();
 
