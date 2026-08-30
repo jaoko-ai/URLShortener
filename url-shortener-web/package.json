@@ -1,5 +1,5 @@
 {
-  "name": "urlshortener",
+  "name": "url-shortener-web",
   "private": true,
   "version": "0.0.0",
   "type": "module",

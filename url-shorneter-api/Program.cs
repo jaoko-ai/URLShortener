@@ -43,8 +43,7 @@ class Program
             foreach (char character in str)
             {
                 var value = ALPHABET.IndexOf(character);
-                //TODO: implement better error handling
-                // if (value === -1) throw new Error('Invalid Base62 character: ' + char);
+                if (value == -1) throw new ArgumentException($"Invalid Base62 character: {character}");
                 result = result * 62 + value;
             }
             return result;
@@ -76,7 +75,7 @@ class Program
            newUrl.ShortCode = Encode(newUrl.Id);
 
            await db.SaveChangesAsync();
-
+           Console.WriteLine($"original: {request.LongUrl}, shortCode given: {newUrl.ShortCode}");
            return Results.Ok(new { ShortUrl = $"http://localhost:5062/{newUrl.ShortCode}" });
        });
         app.MapGet("/{shortCode}", async (AppDbContext db, string shortCode, HttpContext context) =>
@@ -121,16 +120,12 @@ class Program
             await db.SaveChangesAsync();
             return Results.Redirect(record.OriginalUrl);
         });
-
+        app.MapGet("/", () => Results.Ok(new { id = 2, Name = "jaksus", Agony = "pain" }));
         app.MapGet("/stats/{shortCode}", async (AppDbContext db, string shortCode) =>
         {
             var input = Decode(shortCode);
-            Clicks stats = null!;
-            try
-            {
-                stats = await db.Clicks.Where(u => u.UrlId == input).SingleAsync();
-            }
-            catch
+            Clicks? stats = await db.Clicks.Where(u => u.UrlId == input).SingleOrDefaultAsync();
+            if (stats == null)
             {
                 return Results.Ok("No stats yet for this route");
             }
@@ -139,10 +134,10 @@ class Program
         });
         app.MapPost("/custom", async (AppDbContext db, UrlRequest request) =>
         {
-            return Results.Ok("Service under fix ");
+            return Results.Ok(new { Message = "Server changes under way" });
 
         });
-        app.MapDelete("/{shortCode}", async (AppDbContext db, string shortCode) =>
+        app.MapDelete("/:{shortCode}", async (AppDbContext db, string shortCode) =>
         {
             var input = await db.Urls.Where(c => c.ShortCode == shortCode).SingleOrDefaultAsync();
             if (input == null)

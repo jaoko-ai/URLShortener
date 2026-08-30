@@ -1,0 +1,15 @@
+###
+POST http://localhost:5062/shorten HTTP/1.1
+Content-Type: application/json
+
+{
+    "LongUrl": "https://github.com/jaoko-ai"
+}
+
+
+### 
+Get http://localhost:5062/
+
+
+###
+GET https://testapi.jasonwatmore.com/products/1
