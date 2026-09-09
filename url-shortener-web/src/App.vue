@@ -1,17 +1,17 @@
-<script setup lang="ts">
-import HelloWorld from "./components/HelloWorld.vue";
-</script>
+<script setup lang="ts"></script>
 
 <template>
-  <h1 class="text-3xl font-bold underline">Hello world!</h1>
-  <HelloWorld />
-
-  <p><strong>Current route path:</strong> {{ $route.name }}</p>
-  <nav>
-    <RouterLink to="/">Go to Home</RouterLink>
-    <RouterLink to="/about">Go to About</RouterLink>
-  </nav>
-  <main>
-    <RouterView />
+  <header class="sticky top-0 border m-5 p-1 shadow shadow-blue-500">
+    <nav class="flex justify-around">
+      <h1 class="sticky left-0">
+        <RouterLink to="/">Url shortener</RouterLink>
+      </h1>
+      <RouterLink to="/about">About</RouterLink>
+    </nav>
+  </header>
+  <main class="h-screen w-screen flex justify-center align-middle">
+    <div>
+      <RouterView />
+    </div>
   </main>
 </template>
