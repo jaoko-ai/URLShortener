@@ -6,7 +6,8 @@ namespace URLShortener;
 class Program
 {
 
-    record UrlRequest(string LongUrl);
+    record Auth(string UserId, string Passcode);
+    record UrlRequest(string LongUrl, Guid UserId);
     public static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
@@ -53,17 +54,21 @@ class Program
        {
            if (string.IsNullOrEmpty(request.LongUrl))
            {
-               return Results.BadRequest("URL cannot be empty.");
+               return Results.BadRequest("Bad URL");
            }
 
            if (!Uri.TryCreate(request.LongUrl, UriKind.Absolute, out var uri) ||
            (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
            {
-               return Results.BadRequest("URL must be a valid absolute http(s) URL.");
+               return Results.BadRequest("Bad URL");
            }
-
+           if (!await db.Users.AnyAsync(c => c.Id == request.UserId))
+           {
+               return Results.Problem();
+           }
            var newUrl = new Urls
            {
+               UserId = request.UserId,
                OriginalUrl = request.LongUrl,
 
                ShortCode = "temp" // Placeholder
@@ -124,7 +129,7 @@ class Program
         app.MapGet("/stats/{shortCode}", async (AppDbContext db, string shortCode) =>
         {
             var input = Decode(shortCode);
-            Clicks? stats = await db.Clicks.Where(u => u.UrlId == input).SingleOrDefaultAsync();
+            Clicks[] stats = await db.Clicks.Where(u => u.UrlId == input).ToArrayAsync();
             if (stats == null)
             {
                 return Results.Ok("No stats yet for this route");
@@ -137,7 +142,7 @@ class Program
             return Results.Ok(new { Message = "Server changes under way" });
 
         });
-        app.MapDelete("/:{shortCode}", async (AppDbContext db, string shortCode) =>
+        app.MapDelete("/{shortCode}", async (AppDbContext db, string shortCode) =>
         {
             var input = await db.Urls.Where(c => c.ShortCode == shortCode).SingleOrDefaultAsync();
             if (input == null)
@@ -149,7 +154,19 @@ class Program
             await db.SaveChangesAsync();
             return Results.Ok(new { Message = "Data was successfully deleted" });
         });
-        app.Run();
 
+        app.MapPost("/auth/login", () =>
+        {
+
+        });
+
+        app.MapPost("/auth/register", (Auth auth) =>
+        {
+            var item = new
+            {
+                UserId = Guid.CreateVersion7(),
+            };
+        });
+        app.Run();
     }
 }

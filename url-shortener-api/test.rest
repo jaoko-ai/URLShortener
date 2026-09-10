@@ -6,9 +6,12 @@ Content-Type: application/json
     "LongUrl": "https://github.com/jaoko-ai"
 }
 
+### 
+GET http://localhost:5062/stats/1
+
 
 ### 
-Get http://localhost:5062/
+Get http://localhost:5062/5
 
 
 ###
