@@ -7,6 +7,7 @@ public class AppDbContext : DbContext
 {
     public DbSet<Urls> Urls { get; set; }
     public DbSet<Clicks> Clicks { get; set; }
+    public DbSet<Users> Users { get; set; }
 
     // The constructor accepts options from Program.cs
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
@@ -36,14 +37,14 @@ public class Urls
     public int Id { get; set; }
     public required string OriginalUrl { get; set; }
     public required string ShortCode { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public string CreatedAt { get; set; } = DateTimeOffset.UtcNow.ToString();
     public int ClickCount { get; set; }
 
     public ICollection<Clicks> Clicks { get; set; } = new List<Clicks>();
 
 
     // To be implemented when implementing USer accounts
-    // public required string UserId { get; set; }
+    public required Guid UserId { get; set; }
 }
 
 
@@ -53,8 +54,17 @@ public class Clicks
     public required int UrlId { get; set; }
     [ForeignKey(nameof(UrlId))]
     public Urls? Urls { get; set; }
-    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+    public string Timestamp { get; set; } = DateTimeOffset.UtcNow.ToString();
     public string? IpAddress { get; set; }
     public string? UserAgent { get; set; }
     public required string referrer { get; set; }
+    public string? language { get; set; }
+}
+
+// Rolling out auth
+public class Users
+{
+    public Guid Id { get; set; }
+    public required string email { get; set; }
+    public required string password { get; set; }
 }
