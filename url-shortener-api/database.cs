@@ -44,7 +44,7 @@ public class Urls
 
 
     // To be implemented when implementing USer accounts
-    public required Guid UserId { get; set; }
+    public Guid UserId { get; set; }
 }
 
 
