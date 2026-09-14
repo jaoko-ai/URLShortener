@@ -2,6 +2,6 @@ namespace URLShortener.Entities;
 
 public class User
 {
-    public string username = string.Empty;
-    public string passwordHash = string.Empty;
+    public string Username = string.Empty;
+    public string PasswordHash = string.Empty;
 }
