@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import axios from "axios";
-const backendURL: string = "http://localhost:5062/";
+
+let backendURL: string = "";
+if (import.meta.env.VITE_DEV_ENV) {
+  backendURL = import.meta.env.VITE_DEV_BACKEND_URL;
+} else {
+  backendURL = import.meta.env.VITE_BACKEND_URL;
+}
 const path = "shorten";
 const urlInput = ref("");
 const errorMessage = ref("");
@@ -61,13 +67,20 @@ const PostShorten = () => {
       <a :href="URLResponse" target="_blank">ShortCode: {{ URLResponse }}</a>
     </div>
     <div class="border min-w-100 rounded-xl p-5 min-h-100 shrink-0">
-      <div><h1>Links</h1></div>
+      <h1>Links</h1>
       <div>
         <h1>Clicks Previews</h1>
       </div>
     </div>
   </div>
-  <div class="border rounded-xl">
-    <h1>Pie hole data representation</h1>
+  <div
+    class="bg-blue-50 border rounded-xl w-full h-100 m-5 p-3 flex justify-center items-center"
+  >
+    <h1>Pie hole data representations</h1>
   </div>
+
+  <p>
+    backendUrl:
+    {{ backendURL }}
+  </p>
 </template>

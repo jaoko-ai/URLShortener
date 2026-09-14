@@ -8,9 +8,17 @@
       <RouterLink to="/">Url shortener</RouterLink>
     </h1>
     <nav>
-      <RouterLink to="/about">About</RouterLink>
+      <RouterLink
+        class="hover:bg-gray-100 transition-colors ease-linear w-3 h-3 p-3"
+        to="/auth"
+        >Login</RouterLink
+      >
 
-      <RouterLink to="/login">Login</RouterLink>
+      <RouterLink
+        class="w-3 h-3 p-3 m-3 hover:bg-gray-100 transition-colors ease-in"
+        to="/about"
+        >About</RouterLink
+      >
     </nav>
   </header>
   <main class="h-screen w-screen flex justify-center align-middle">
