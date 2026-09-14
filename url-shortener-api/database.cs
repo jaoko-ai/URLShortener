@@ -65,6 +65,7 @@ public class Clicks
 public class Users
 {
     public Guid Id { get; set; }
-    public required string email { get; set; }
-    public required string password { get; set; }
+    public required string Username { get; set; }
+    public required string Email { get; set; }
+    public required string PasswordHash { get; set; }
 }
