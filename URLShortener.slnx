@@ -1,0 +1,5 @@
+<Solution>
+  <Folder Name="/url-shortener-api/">
+    <Project Path="url-shortener-api/URLShortener.csproj" />
+  </Folder>
+</Solution>
