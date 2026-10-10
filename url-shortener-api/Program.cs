@@ -1,19 +1,44 @@
 using URLShortener.Data;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
-
+using WorkOS;
 
 var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+// Configure WorkOS client
+var workosApiKey = builder.Configuration["WorkOS:ApiKey"];
+var workosClientId = builder.Configuration["WorkOS:ClientId"];
+var workosRedirectUri = builder.Configuration["WorkOS:RedirectUri"]
+    ?? throw new InvalidOperationException("WorkOS:RedirectUri configuration is required");
+
+var workosClient = new WorkOSClient(new WorkOSOptions
+{
+    ApiKey = workosApiKey,
+    ClientId = workosClientId
+});
+WorkOSConfiguration.WorkOSClient = workosClient;
+
+builder.Services.AddSingleton(workosClient);
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
-// Program.cs
 
+// Add session support for authentication
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
 
 var app = builder.Build();
+
+// Enable session middleware
+app.UseSession();
 
 if (app.Environment.IsDevelopment())
 {
@@ -22,5 +47,73 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapGet("/", () => Results.Ok(new { id = 2, Name = "jaksus", Agony = "pain" }));
+
+// Auth endpoints
+app.MapGet("/auth/login", (WorkOSClient client) =>
+{
+    var authorizationUrl = client.UserManagement.GetAuthorizationUrl(
+        new UserManagementGetAuthorizationUrlOptions
+        {
+            RedirectUri = workosRedirectUri,
+            Provider = UserManagementAuthenticationProvider.Authkit
+        });
+
+    return Results.Redirect(authorizationUrl);
+});
+
+app.MapGet("/auth/callback", async (HttpContext context, WorkOSClient client) =>
+{
+    var code = context.Request.Query["code"].ToString();
+
+    if (string.IsNullOrEmpty(code))
+    {
+        return Results.BadRequest("Authorization code not provided");
+    }
+
+    try
+    {
+        var authResponse = await client.UserManagement.AuthenticateWithCodeAsync(
+            new AuthenticateWithCodeOptions
+            {
+                Code = code
+            });
+
+        // Store user info in session
+        context.Session.SetString("user_id", authResponse.User.Id ?? "");
+        context.Session.SetString("user_email", authResponse.User.Email ?? "");
+        context.Session.SetString("user_name",
+            $"{authResponse.User.FirstName} {authResponse.User.LastName}".Trim());
+
+        return Results.Redirect("/");
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem($"Authentication failed: {ex.Message}");
+    }
+});
+
+app.MapGet("/auth/logout", (HttpContext context) =>
+{
+    context.Session.Clear();
+    return Results.Redirect("/");
+});
+
+app.MapGet("/auth/me", (HttpContext context) =>
+{
+    var userId = context.Session.GetString("user_id");
+
+    if (string.IsNullOrEmpty(userId))
+    {
+        return Results.Unauthorized();
+    }
+
+    return Results.Ok(new
+    {
+        id = userId,
+        email = context.Session.GetString("user_email"),
+        name = context.Session.GetString("user_name")
+    });
+});
+
 app.MapControllers();
 app.Run();
