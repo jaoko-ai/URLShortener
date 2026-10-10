@@ -1,86 +1,34 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import axios from "axios";
+import { onMounted } from "vue";
+import LinkList from "../components/LinkList.vue";
+import ShortenForm from "../components/ShortenForm.vue";
+import StatsPanel from "../components/StatsPanel.vue";
+import { useAuthStore } from "../stores/auth";
+import { useLinksStore } from "../stores/links";
 
-let backendURL: string = "";
-if (import.meta.env.VITE_DEV_ENV) {
-  backendURL = import.meta.env.VITE_DEV_BACKEND_URL;
-} else {
-  backendURL = import.meta.env.VITE_BACKEND_URL;
-}
-const path = "shorten";
-const urlInput = ref("");
-const errorMessage = ref("");
-let URLResponse = ref("");
-const urlRegex =
-  /^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$/;
+const auth = useAuthStore();
+const links = useLinksStore();
 
-const PostShorten = () => {
-  errorMessage.value = "";
-  if (urlInput.value === null || urlInput.value === "") {
-    errorMessage.value = "cannot be empty";
-    return;
+onMounted(() => {
+  if (auth.isAuthenticated) {
+    void links.loadMine();
   }
-  if (!urlRegex.test(urlInput.value.trim())) {
-    errorMessage.value = "Enter a valid url";
-    return;
-  }
-
-  axios
-    .post(backendURL + path, {
-      LongUrl: urlInput.value,
-    })
-    .then((response) => {
-      URLResponse.value = response.data.shortUrl;
-      console.log(response.data);
-    })
-    .catch((error) => {
-      errorMessage.value = error;
-      console.log(error);
-    })
-    .finally(() => {
-      urlInput.value = "";
-    });
-};
+});
 </script>
-<template>
-  <div class="flex justify-around gap-3 items-center">
-    <div class="border rounded-xl p-5 max-h-50 flex-1">
-      <h3 class="block">Shorten a URL</h3>
-      <form @submit.prevent="PostShorten" id="ShortenUrlInput">
-        <label for="UrlInput">Enter a url: </label>
-        <input
-          id="UrlInput"
-          type="text"
-          class="border border-purle-300"
-          placeholder="Enter a URL"
-          v-model="urlInput"
-        />
-        <button
-          class="border p-1 m-1 rounded-full bg-blue-500 hover:bg-blue-700 hover:shadow-xl active:bg-blue-600 hover:cursor-pointer"
-          type="submit"
-        >
-          shorten
-        </button>
-        <p class="text-red-600 text-xl">{{ errorMessage }}</p>
-      </form>
-      <a :href="URLResponse" target="_blank">ShortCode: {{ URLResponse }}</a>
-    </div>
-    <div class="border min-w-100 rounded-xl p-5 min-h-100 shrink-0">
-      <h1>Links</h1>
-      <div>
-        <h1>Clicks Previews</h1>
-      </div>
-    </div>
-  </div>
-  <div
-    class="bg-blue-50 border rounded-xl w-full h-100 m-5 p-3 flex justify-center items-center"
-  >
-    <h1>Pie hole data representations</h1>
-  </div>
 
-  <p>
-    backendUrl:
-    {{ backendURL }}
-  </p>
+<template>
+  <div class="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+    <div class="space-y-6">
+      <ShortenForm />
+      <StatsPanel />
+    </div>
+    <aside class="space-y-4">
+      <div class="rounded-3xl border border-line bg-pine p-5 text-card">
+        <p class="text-xs uppercase tracking-[0.2em] text-card/70">Overview</p>
+        <p class="mt-3 font-display text-4xl">{{ links.totalClicks }}</p>
+        <p class="mt-1 text-sm text-card/80">clicks across remembered links</p>
+      </div>
+      <LinkList />
+    </aside>
+  </div>
 </template>
